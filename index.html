@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Bootstrap, from Twitter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+    <style>
+        .mini-layout {
+            /*background-color: #dceaf4;*/
+            border: 1px solid #ddd;
+            -webkit-border-radius: 6px;
+            -moz-border-radius: 6px;
+            border-radius: 6px;
+            -webkit-box-shadow: 0 1px 2px rgba(0, 0, 0, .075);
+            -moz-box-shadow: 0 1px 2px rgba(0, 0, 0, .075);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, .075);
+        }
+
+        .sql-panel {
+            margin-top: 40px;
+            width: 100%;
+            height: 800px;
+            background-image: url("img/bg.png");
+            background-repeat: repeat;
+        }
+
+        .list {
+            position: relative;
+            margin: 15px 0;
+            padding: 39px 19px 14px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            -webkit-border-radius: 4px;
+            -moz-border-radius: 4px;
+            border-radius: 4px;
+        }
+
+        .rectangle {
+            width: 320px;
+            margin: 15px 0;
+            padding: 39px 19px 14px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            -webkit-border-radius: 4px;
+            -moz-border-radius: 4px;
+            border-radius: 4px;
+            border: 1px solid #aaaaaa;
+            z-index: 10;
+            cursor: move;
+            user-select:none;
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .rectangle:after {
+            content: "hive加载";
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            padding: 3px 7px;
+            font-size: 12px;
+            font-weight: bold;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            color: #9da0a4;
+            -webkit-border-radius: 4px 0 4px 0;
+            -moz-border-radius: 4px 0 4px 0;
+            border-radius: 4px 0 4px 0;
+        }
+
+        .form-horizontal .control-label {
+            float: left;
+            width: 60px;
+            padding-top: 5px;
+            text-align: right;
+        }
+
+        .form-horizontal .controls {
+            margin-left: 80px;
+        }
+
+        .rectangle-selected {
+            /*border: 1px solid #1e90ff;*/
+            /*box-shadow: 4px 4px 2px #1e90ff;*/
+            border-color: rgba(82, 168, 236, 0.8);
+            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+        }
+
+        .line {
+            background-color: #000000;
+        }
+
+        .context-menu {
+            position: absolute;
+            background: #b3b3b3;
+            background: rgba(0, 0, 0, 0.3);
+            margin: 0;
+            outline: none;
+            padding: 1px;
+            overflow: hidden;
+            -webkit-border-radius: 4px;
+            -moz-border-radius: 4px;
+            border-radius: 4px;
+            -webkit-box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.3);
+            -moz-box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.3);
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-body {
+            background: #FFF;
+            margin: 0;
+            padding: 4px 0;
+            overflow-y: auto;
+            -webkit-border-radius: 3px;
+            -moz-border-radius: 3px;
+            border-radius: 3px;
+        }
+
+        .menuitem {
+            position: relative;
+            color: #000;
+            font-size: 13px;
+            line-height: 16px;
+            margin: 0;
+            border-top: #fff solid 1px;
+            padding: 1px 7em 2px 22px;
+            white-space: nowrap;
+            cursor: default;
+        }
+
+        .menuitem:hover, .menuitem.hover {
+            background-color: #2eb5e5;
+            background-image: -moz-linear-gradient(top, #34c0e9 0%, #29aae1 100%);
+            background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #34c0e9), color-stop(100%, #29aae1));
+            background-image: -webkit-linear-gradient(top, #34c0e9 0%, #29aae1 100%);
+            background-image: -o-linear-gradient(top, #34c0e9 0%, #29aae1 100%);
+            background-image: -ms-linear-gradient(top, #34c0e9 0%, #29aae1 100%);
+            background-image: linear-gradient(top, #34c0e9 0%, #29aae1 100%);
+            filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#34c0e9', endColorstr='#29aae1',GradientType=0 );
+            color: #fff;
+            text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+            border-top-color: #2eb5e5;
+        }
+
+        .menuitem-accel {
+            color: #999;
+            position: absolute;
+            padding: 0 6px;
+            right: 0;
+            text-align: right;
+        }
+
+        div#cmdbar {
+            float: left;
+        }
+
+        div#runbar {
+            float: left;
+            margin-left: 5px;
+        }
+
+        div#progressbar {
+            width: 750px;
+            margin-left: 10px;
+            margin-top: 5px;
+            float: left;
+        }
+
+    </style>
+
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery-ui.js"></script>
+    <script src="js/bootstrap.js"></script>
+    <script src="js/palo.js"></script>
+    <!--<script src="js/dom-arrow.js"></script>-->
+    <script src="js/underscore-min.js"></script>
+    <script src="js/jquery.contextMenu.js"></script>
+    <script>
+        $('.btn').button('complete');
+        var rootNodes = [], nodes = {};
+        var actionEnum = {
+            DRAW_CMD: 0,
+            DRAGGING : 1,
+            DRAW_ARROW: 2
+        }
+
+        var action = actionEnum.DRAW_CMD;
+        //画线
+        var startPos, candidatePoints, startNodeId;
+
+
+        $(function () {
+
+            var sqlPanel = $("div.sql-panel");
+
+            /**
+             * 增加一个可拖拽元素
+             *
+             * @param el
+             */
+            var addDraggable = function(el) {
+                var dragStartPosition;
+                el.draggable({
+                    scroll: true,
+                    revert: "invalid",
+                    containment: "div.sql-panel",
+                    start: function() {
+                        console.log('draggable.start')
+                        action = actionEnum.DRAGGING;
+                    },
+                    drag: function () {
+                        console.log('draggable.drag')
+                        dragDraggable($(this), dragStartPosition);
+                        dragStartPosition = absolutePosition($(this));
+                    },
+                    stop: function() {
+                        console.log('draggable.stop')
+                        action = actionEnum.DRAW_CMD;
+                    }
+                });
+            }
+
+            sqlPanel.droppable({
+                accept: ".rectangle",
+                activeClass: "ui-state-hover",
+                hoverClass: "ui-state-active",
+                drop: function( event, ui ) {
+                }
+            });
+
+            sqlPanel.delegate(".rectangle", "mousedown", function (e) {
+                console.log('rectangle.mousedown')
+            });
+
+            sqlPanel.delegate(".rectangle", "mouseenter", function (e) {
+                e.stopImmediatePropagation();
+                showCircle($(this));
+            });
+            sqlPanel.delegate(".rectangle", "mouseleave", function (e) {
+                e.stopImmediatePropagation();
+                $("div.sql-panel .pos-circle").hide();
+                $("div.sql-panel .rectangle-selected .pos-circle").show();
+            });
+            sqlPanel.delegate(".rectangle", "click", function (e) {
+                console.log('rectangle.click')
+                e.stopImmediatePropagation();
+                selectDraggable($(this))
+            });
+
+            sqlPanel.delegate(".line", "click", function (e) {
+                console.log('line.click')
+                e.stopPropagation();
+                if (!$(this).hasClass('rectangle-selected')) {
+                    $(this).addClass('rectangle-selected')
+                }
+            });
+
+            sqlPanel.mousemove(function(e) {
+                console.log('sqlPanel.mousemove')
+                if(action == actionEnum.DRAW_CMD) {
+//                    e.stopImmediatePropagation();
+                    $(this).css('cursor', 'default');
+                    return;
+                } else if (action == actionEnum.DRAW_ARROW) {
+                    e.stopImmediatePropagation();
+                    if (!$(".temp-line").length) {
+                        drawArrow(startPos[0], startPos[1], e.pageX, e.pageY).addClass('temp-line').appendTo("div.sql-panel");
+                    } else {
+                        moveArrow($(".temp-line"), startPos, [e.pageX, e.pageY]);
+                    }
+                    $(this).css('cursor', 'crosshair');
+                    sqlPanel.children('.rectangle').not('#' + startNodeId).addClass('rectangle-selected');
+                } else if (action == actionEnum.DRAGGING) {
+                }
+            });
+            sqlPanel.delegate(".rectangle", "mouseup", function (e) {
+                console.log('rectangle.mouseup')
+                selectDraggable($(this));
+                if (action != actionEnum.DRAW_ARROW) {
+                    return;
+                } else {
+                    e.stopImmediatePropagation();
+                    $(".temp-line").remove();
+                    action = actionEnum.DRAW_CMD;
+                    sqlPanel.children('.rectangle').removeClass('rectangle-selected');
+                    var endNodeId = $(this).attr('id');
+                    if ($('#arrow-' + startNodeId + '-' + endNodeId).length == 0) {
+                        var p1 = nearestPoint([startPos[0], startPos[1]], getEdge($(this)));
+                        var p2 = nearestPoint(p1, candidatePoints);
+                        drawArrow(p2[0], p2[1], p1[0], p1[1]).appendTo("div.sql-panel").attr('id', 'arrow-' + startNodeId +
+                                '-' + endNodeId);
+                        if (rootNodes.indexOf(endNodeId) != -1) {
+                            rootNodes.remove(rootNodes.indexOf(endNodeId));
+                        }
+                        nodes[endNodeId].addParent(nodes[startNodeId]);
+                        nodes[startNodeId].addChild(nodes[endNodeId]);
+                    }
+                }
+            });
+            sqlPanel.mouseup(function(e) {
+                console.log('sqlPanel.mouseup')
+                if (action != actionEnum.DRAW_ARROW) {
+                } else {
+                    e.stopImmediatePropagation();
+                    $(".temp-line").remove();
+                    action = actionEnum.DRAW_CMD;
+                }
+            })
+            sqlPanel.click(function(e) {
+                console.log('sqlPanel.click')
+                if (action == actionEnum.DRAW_CMD && $('div.btn-group .active').length > 0) {
+                    var id = $('div.btn-group .active').attr('id');
+                    var cmd, cmdDom;
+                    if (id === 'loadCmd') {
+                        cmd = new LoadCmd();
+                    } else if (id === 'innerJoinCmd') {
+                        cmd = new InnerJoinCmd();
+                    } else if (id === 'outerJoinCmd') {
+                        cmd = new OuterJoinCmd();
+                    } else if (id === 'filterCmd') {
+                        cmd = new FilterCmd();
+                    } else if (id === 'distinctCmd') {
+                        cmd = new DistinctCmd();
+                    }
+                    if (cmd) {
+                        cmdDom = cmd.draw().css({
+                            'position': 'absolute'}).offset({'left': e.pageX, 'top': e.pageY});
+                        cmdDom.appendTo(sqlPanel);
+                        addDraggable(cmdDom);
+                        rootNodes.push(cmd.id);
+                        nodes[cmd.id] = cmd;
+                        $('div.btn-group .active').removeClass('active');
+                    }
+
+                }
+
+            });
+
+            $('#run').click(function(e) {
+                var v = {};
+                v.handler = 'pig';
+                v.vertices = [];
+                v.edges = [];
+                _.keys(nodes).forEach(function(el, index) {
+                    nodes[el].verticeId = index;
+                    v.vertices.push(nodes[el].serialize());
+                });
+                var travel = function(cmdNode) {
+                    cmdNode.getChildren().forEach(function(childNode){
+                        if (!_.contains(v.edges, [cmdNode.verticeId, childNode.verticeId])) {
+                            v.edges.push([cmdNode.verticeId, childNode.verticeId]);
+                        }
+                        travel(childNode);
+                    })
+                }
+                rootNodes.forEach(function(rootNodeName){
+                    travel(nodes[rootNodeName]);
+                })
+                console.log(JSON.stringify(v));
+                $.ajax({
+                    type: "POST",
+                    url: "some.php",
+                    data: JSON.stringify(v)
+                }).done(function (msg) {
+                            cosole.log("done");
+                        });
+            })
+
+            sqlPanel.contextMenu('context-menu-1', {
+                        '删除': {
+                            click: function(el){
+                                deleteCmdNode(nodes[el.attr('id')]);
+                            },
+                            klass: "menuitem",
+                            accel: "Delete",
+                            accelKclass: "menuitem-accel"
+                        }
+                    },
+                    {
+                        delegateEventTo: '.rectangle',
+                        disable_native_context_menu: true
+                    }
+            );
+
+        });
+
+
+        function deleteCmdNode(cmdNode) {
+            if (rootNodes.indexOf(cmdNode.id) != -1) {
+                rootNodes.remove(rootNodes.indexOf(cmdNode.id));
+            }
+            cmdNode.getParents().forEach(function(parent){
+                parent.removeChild(cmdNode);
+                $('#arrow-' + parent.id + '-' + cmdNode.id).remove();
+            })
+            cmdNode.getChildren().forEach(function(child){
+                child.removeParent(cmdNode);
+                $('#arrow-' + cmdNode.id + '-' + child.id).remove();
+                if (child.getChildren().length == 0) {
+                    rootNodes.push(child.id);
+                }
+            })
+            delete nodes[cmdNode.id];
+            cmdNode.jqueryNode.remove();
+        }
+
+
+        /**
+         * 拖拽元素
+         *
+         * @param el
+         * @param dragStartPoint
+         */
+        function dragDraggable(el, dragStartPoint) {
+            selectDraggable(el);
+//            moveDraggable(el, dragStartPoint, event);
+            var cmdNode = nodes[el.attr('id')];
+            cmdNode.getParents().forEach(function (parent) {
+                redrawLine(parent.getJqueryNode(), el);
+            })
+            cmdNode.getChildren().forEach(function (child) {
+                redrawLine(el, child.getJqueryNode());
+            })
+        }
+
+        /**
+         * 重新画两个元素的连接线
+         * @param s
+         * @param e
+         */
+        function redrawLine(s, e) {
+            startNodeEdges = getEdge(s);
+            endNodeEdges = getEdge(e);
+            var ep = nearestPoint(startNodeEdges[0], endNodeEdges);
+            var sp = nearestPoint(ep, startNodeEdges);
+            moveArrow($('#arrow-' + s.attr('id') + '-' + e.attr('id')), sp, ep);
+        }
+
+        /**
+         * 展示小球
+         *
+         * @param el
+         */
+        function showCircle(el) {
+            if (!el.children('.pos-circle').length) {
+                getEdge(el, true).forEach(function(p) {
+                    drawCircle(p[0] - 2, p[1] - 2, 4, 'yellow')
+                            .addClass("pos-circle")
+                            .css({
+                                'border': '1px solid rgba(82, 168, 236, 0.8)',
+                                'cursor': 'crosshair',
+                                'z-index': 15
+                            })
+                            .mousedown(function(e) {
+                                console.log('pos-circle.mousedown')
+                                e.stopPropagation();
+                                action = actionEnum.DRAW_ARROW;
+                                startPos = getCircleCenter($(this));
+                                var startNode = $(this).parent('.rectangle');
+                                candidatePoints = getEdge(startNode);
+                                startNodeId = startNode.attr('id');
+                            })
+                            .appendTo(el);
+                })
+            }
+            el.children('.pos-circle').show();
+        }
+
+        /**
+         * 选中可以拖动的元素
+         * @param el
+         */
+        function selectDraggable(el) {
+            $("div.sql-panel .rectangle").removeClass("rectangle-selected");
+            $(".pos-circle").hide();
+            if (!el.hasClass("rectangle-selected")) {
+                el.addClass("rectangle-selected");
+                showCircle(el);
+            }
+        }
+
+        /**
+         * jquery对象的绝对位置
+         *
+         * @param el
+         * @return {Array}
+         */
+        function absolutePosition(el) {
+            return [el.offset().left, el.offset().top];
+        }
+
+        /**
+         * 返回points中与p最近的点
+         *
+         * @param p
+         * @param points
+         * @return {*}
+         */
+        function nearestPoint(p, points) {
+            var smallest = Number.MAX_VALUE, sp;
+            points.forEach(function(el) {
+                var d = distance(p, el);
+                if (smallest > d) {
+                    smallest = d;
+                    sp = el;
+                }
+            })
+            return sp;
+        }
+
+        /**
+         * 计算两点之间的距离
+         * @param p1
+         * @param p2
+         * @return {Number}
+         */
+        function distance(p1, p2) {
+            var sum = 0;
+            for(var i = 0; i < p1.length; i++) {
+                sum += (p1[i] - p2[i]) * (p1[i] - p2[i]);
+            }
+            return Math.sqrt(sum);
+        }
+
+        /**
+         * 得到矩形的四个点的坐标
+         * @param el
+         * @param isRelative 是否是相对坐标
+         * @return {Array}
+         */
+        function getEdge(el, isRelative) {
+            var arr = new Array();
+            var y = isRelative == undefined? el.offset().top : 0, x = isRelative == undefined? el.offset().left : 0;
+            var w = el.outerWidth(), h = el.outerHeight();
+//            arr.push([x, y]);
+            arr.push([x + w/2, y]);
+//            arr.push([x + w, y]);
+            arr.push([x, y + h/2]);
+            arr.push([x + w, y + h/2]);
+//            arr.push([x, y + h]);
+            arr.push([x + w/2, y + h]);
+//            arr.push([x + w, y + h]);
+            return arr;
+        }
+
+        function getCircleCenter(el) {
+            var p = absolutePosition(el);
+            var r = parseInt(el.css('border-radius'), 10);
+            return [p[0] + r, p[1] + r];
+        }
+
+        /**
+         * 画一条线
+         *
+         * @param x1
+         * @param y1
+         * @param x2
+         * @param y2
+         * @return {*|jQuery}
+         */
+        function drawLine(x1, y1, x2, y2) {
+            var length = distance([x1, y1], [x2, y2]);
+            var angle  = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+            var transform = 'rotate('+angle+'deg)';
+
+            var line = $('<div>')
+                    .addClass('line')
+                    .css({
+                        'position': 'absolute',
+                        'transform': transform,
+                        'transform-origin': '0% 50%'
+                    })
+                    .width(length)
+                    .height('1px')
+                    .offset({'left': x1, 'top': y1});
+
+            return line;
+        }
+
+        function drawArrow(x1, y1, x2, y2) {
+            var length = distance([x1, y1], [x2, y2]);
+            var angle  = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+            var transform = 'rotate('+angle+'deg)';
+
+            var line = $('<div>')
+                    .addClass('line')
+                    .css({
+                        'position': 'absolute',
+                        'transform': transform,
+                        'transform-origin': '0% 50%'
+                    })
+                    .width(length)
+                    .height('1px')
+                    .offset({'left': x1, 'top': y1});
+
+            //上半箭头
+            var arrowLength = length / 10.0;
+            $('<div>')
+                    .addClass('line')
+                    .css({
+                        'position': 'absolute',
+                        'transform': 'rotate(10deg)',
+                        'transform-origin': '100% 50%'
+                    })
+                    .width(arrowLength)
+                    .height('1px').appendTo(line)
+                    .offset({'left': length - arrowLength, 'top': 0});
+
+            //下半箭头
+            $('<div>')
+                    .addClass('line')
+                    .css({
+                        'position': 'absolute',
+                        'transform': 'rotate(-10deg)',
+                        'transform-origin': '100% 50%'
+                    })
+                    .width(arrowLength)
+                    .height('1px').appendTo(line)
+                    .offset({'left': length - arrowLength, 'top': 0});
+
+            return line;
+        }
+
+        /**
+         * 移动一条直线
+         *
+         * @param line
+         * @param p1
+         * @param p2
+         * @return {*}
+         * @deprecated
+         */
+        function moveArrow(line, p1, p2) {
+            var length = distance(p1, p2);
+            var angle  = Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180 / Math.PI;
+            var transform = 'rotate('+angle+'deg)';
+            line.css({
+                'transform': transform
+            }).width(length).css({
+                        'left': p1[0] + "px",
+                        'top': p1[1] + "px"
+                    })
+                    //.offset({'left': p1[0], 'top': p1[1]});
+
+            var arrowLength = length / 10.0;
+            line.children('div').width(arrowLength).css({
+                'left' : length - arrowLength + "px",
+                'top' : 0 + "px"
+            })
+            return line;
+        }
+        /**
+         * 画一个圆
+         *
+         * @param x
+         * @param y
+         * @param r
+         * @param color
+         * @return {*|jQuery}
+         */
+        function drawCircle(x, y, r, color) {
+            var color = color || '#000000';
+            var circle = $('<div>')
+                    .css({
+                        'position': 'absolute',
+                        'border-radius': r,
+                        'width': 2*r,
+                        'height': 2*r,
+                        'background-color': color
+                    })
+                    .offset({'left': x - r, 'top': y - r});
+            return circle;
+        }
+    </script>
+
+</head>
+
+<body>
+<div class="container">
+    <div class="page-header">
+        <h1>Palo-可视化SQL编辑器</h1>
+    </div>
+    <div class="container-fluid">
+        <div>
+            <div id="cmdbar" class="btn-group" data-toggle="buttons-radio">
+                <button type="button" id="loadCmd" class="btn btn-primary">加载</button>
+                <button type="button" id="innerJoinCmd" class="btn btn-primary">内连接</button>
+                <button type="button" id="outerJoinCmd" class="btn btn-primary">外链接</button>
+                <button type="button" id="filterCmd" class="btn btn-primary">过滤</button>
+                <button type="button" id="distinctCmd" class="btn btn-primary">去重</button>
+            </div>
+            <div id="runbar">
+                <button type="button" id="run" class="btn btn-primary" data-loading-text="Loading...">运行</button>
+            </div>
+            <div id="progressbar" class="progress progress-striped active">
+                <div class="bar" style="width: 40%;"></div>
+            </div>
+        </div>
+        <div class="mini-layout sql-panel">
+        </div>
+    </div>
+</div>
+</body>
+</html>
