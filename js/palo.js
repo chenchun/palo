@@ -128,6 +128,11 @@ CmdNode.prototype.serialize = function() {
     this.jqueryNode.find('input').each(function(index) {
         v.params[$(this).attr('name')] = $(this).val();
     })
+    if (arguments.length == 1) {
+        if (arguments[0] === 'save') {
+            v.coordinate = [this.jqueryNode.position().left, this.jqueryNode.position().top];
+        }
+    }
     return v;
 }
 /**
@@ -219,6 +224,22 @@ function DistinctCmd() {
     this.id = CmdNode.newId(this.nodeType);
 }
 extend(DistinctCmd, CmdNode);
+
+/**
+ * 列筛选
+ *
+ * @constructor
+ */
+function SelectCmd() {
+    this.initNode();
+    this.nodeType = "SelectCmd";
+    this.nodeName = "列筛选";
+    this.menu = {
+        "expression" : "表达式"
+    };
+    this.id = CmdNode.newId(this.nodeType);
+}
+extend(SelectCmd, CmdNode);
 
 
 /**

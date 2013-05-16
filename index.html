@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Bootstrap, from Twitter</title>
+    <title>palo</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -11,6 +11,10 @@
     <link href="css/bootstrap.css" rel="stylesheet">
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
     <style>
+        #sql{width: 1200px;}
+
+        .navbar {margin-bottom: 2px; overflow: visible;}
+
         .mini-layout {
             /*background-color: #dceaf4;*/
             border: 1px solid #ddd;
@@ -23,11 +27,17 @@
         }
 
         .sql-panel {
-            margin-top: 40px;
-            width: 100%;
+            width: 1046px;
             height: 800px;
             background-image: url("img/bg.png");
             background-repeat: repeat;
+            position: absolute;
+            top: 44px;
+            left: 152px;
+        }
+
+        .cmdbar {
+            width: 150px;
         }
 
         .list {
@@ -157,22 +167,6 @@
             text-align: right;
         }
 
-        div#cmdbar {
-            float: left;
-        }
-
-        div#runbar {
-            float: left;
-            margin-left: 5px;
-        }
-
-        div#progressbar {
-            width: 750px;
-            margin-left: 10px;
-            margin-top: 5px;
-            float: left;
-        }
-
     </style>
 
     <script src="js/jquery.js"></script>
@@ -195,10 +189,88 @@
         //画线
         var startPos, candidatePoints, startNodeId;
 
-
         $(function () {
 
             var sqlPanel = $("div.sql-panel");
+
+            /**
+             * 增加一个操作
+             * @param id
+             * @param coordinate
+             */
+            var addCmd = function (id, coordinate) {
+                if (id === undefined) {
+                    return;
+                }
+                var cmd, cmdDom;
+                id = id.toLowerCase();
+                if (id === 'loadcmd') {
+                    cmd = new LoadCmd();
+                } else if (id === 'innerjoincmd') {
+                    cmd = new InnerJoinCmd();
+                } else if (id === 'outerjoincmd') {
+                    cmd = new OuterJoinCmd();
+                } else if (id === 'filtercmd') {
+                    cmd = new FilterCmd();
+                } else if (id === 'distinctcmd') {
+                    cmd = new DistinctCmd();
+                } else if (id === 'selectcmd') {
+                    cmd = new SelectCmd();
+                }
+                if (cmd) {
+                    cmdDom = cmd.draw().css({
+                        'position': 'absolute'}).offset({'left': coordinate[0], 'top': coordinate[1]});
+                    cmdDom.appendTo(sqlPanel);
+                    addDraggable(cmdDom);
+                    rootNodes.push(cmd.id);
+                    nodes[cmd.id] = cmd;
+                    $('ul.nav li.active').removeClass('active');
+                    return cmd.id;
+                }
+            }
+
+            /**
+             * 展示小球
+             *
+             * @param el
+             */
+            var showCircle = function (el) {
+                if (!el.children('.pos-circle').length) {
+                    getEdge(el, true).forEach(function(p) {
+                        drawCircle(p[0] - 2, p[1] - 2, 4, 'yellow')
+                                .addClass("pos-circle")
+                                .css({
+                                    'border': '1px solid rgba(82, 168, 236, 0.8)',
+                                    'cursor': 'crosshair',
+                                    'z-index': 15
+                                })
+                                .mousedown(function(e) {
+                                    console.log('pos-circle.mousedown')
+                                    e.stopPropagation();
+                                    action = actionEnum.DRAW_ARROW;
+                                    startPos = relativePosition(getCircleCenter($(this)));
+                                    var startNode = $(this).parent('.rectangle');
+                                    candidatePoints = getEdge(startNode);
+                                    startNodeId = startNode.attr('id');
+                                })
+                                .appendTo(el);
+                    })
+                }
+                el.children('.pos-circle').show();
+            }
+
+            /**
+             * 选中可以拖动的元素
+             * @param el
+             */
+            var selectDraggable = function (el) {
+                $("div.sql-panel .rectangle").removeClass("rectangle-selected");
+                $(".pos-circle").hide();
+                if (!el.hasClass("rectangle-selected")) {
+                    el.addClass("rectangle-selected");
+                    showCircle(el);
+                }
+            }
 
             /**
              * 增加一个可拖拽元素
@@ -218,13 +290,68 @@
                     drag: function () {
                         console.log('draggable.drag')
                         dragDraggable($(this), dragStartPosition);
-                        dragStartPosition = absolutePosition($(this));
+                        dragStartPosition = relativePosition(absolutePosition($(this)));
                     },
                     stop: function() {
                         console.log('draggable.stop')
                         action = actionEnum.DRAW_CMD;
                     }
                 });
+            }
+
+            /**
+             * 拖拽元素
+             *
+             * @param el
+             * @param dragStartPoint
+             */
+            var dragDraggable = function (el, dragStartPoint) {
+                selectDraggable(el);
+                var cmdNode = nodes[el.attr('id')];
+                cmdNode.getParents().forEach(function (parent) {
+                    redrawLine(parent.getJqueryNode(), el);
+                })
+                cmdNode.getChildren().forEach(function (child) {
+                    redrawLine(el, child.getJqueryNode());
+                })
+            }
+
+            /**
+             * 重新画两个元素的连接线
+             * @param s
+             * @param e
+             */
+            var redrawLine = function(s, e) {
+                var neareast = nearestPoints(getEdge(s), getEdge(e));
+                var sp = relativePosition(neareast[0]), ep = relativePosition(neareast[1]);
+                moveArrow($('#arrow-' + s.attr('id') + '-' + e.attr('id')), sp, ep);
+            }
+
+            var relativePosition = function(p) {
+                p[0] = p[0] - sqlPanel.offset().left;
+                p[1] = p[1] - sqlPanel.offset().top;
+                return p;
+            }
+
+            /**
+             * 新增一条边
+             *
+             * @param startNodeId
+             * @param endNodeId
+             */
+            var addEdge = function (startNodeId, endNodeId) {
+                if (startNodeId != endNodeId  && $('#arrow-' + startNodeId + '-' + endNodeId).length == 0) {
+                    var startNode = $('#' + startNodeId), endNode = $('#' + endNodeId);
+                    var neareast = nearestPoints(getEdge(startNode), getEdge(endNode));
+                    var p1 = relativePosition(neareast[0]), p2 = relativePosition(neareast[1]);
+                    drawArrow(p1[0], p1[1], p2[0], p2[1]).appendTo("div.sql-panel").attr('id', 'arrow-' + startNodeId +
+                            '-' + endNodeId);
+                    if (rootNodes.indexOf(endNodeId) != -1) {
+                        rootNodes.remove(rootNodes.indexOf(endNodeId));
+                    }
+                    nodes[endNodeId].addParent(nodes[startNodeId]);
+                    nodes[startNodeId].addChild(nodes[endNodeId]);
+                }
             }
 
             sqlPanel.droppable({
@@ -270,10 +397,11 @@
                     return;
                 } else if (action == actionEnum.DRAW_ARROW) {
                     e.stopImmediatePropagation();
+                    var ep = relativePosition([e.pageX, e.pageY]);
                     if (!$(".temp-line").length) {
-                        drawArrow(startPos[0], startPos[1], e.pageX, e.pageY).addClass('temp-line').appendTo("div.sql-panel");
+                        drawArrow(startPos[0], startPos[1], ep[0], ep[1]).addClass('temp-line').appendTo("div.sql-panel");
                     } else {
-                        moveArrow($(".temp-line"), startPos, [e.pageX, e.pageY]);
+                        moveArrow($(".temp-line"), startPos, ep);
                     }
                     $(this).css('cursor', 'crosshair');
                     sqlPanel.children('.rectangle').not('#' + startNodeId).addClass('rectangle-selected');
@@ -291,9 +419,9 @@
                     action = actionEnum.DRAW_CMD;
                     sqlPanel.children('.rectangle').removeClass('rectangle-selected');
                     var endNodeId = $(this).attr('id');
-                    if ($('#arrow-' + startNodeId + '-' + endNodeId).length == 0) {
-                        var p1 = nearestPoint([startPos[0], startPos[1]], getEdge($(this)));
-                        var p2 = nearestPoint(p1, candidatePoints);
+                    if (startNodeId != endNodeId && $('#arrow-' + startNodeId + '-' + endNodeId).length == 0) {
+                        var p1 = relativePosition(nearestPoint([startPos[0], startPos[1]], getEdge($(this))));
+                        var p2 = relativePosition(nearestPoint(p1, candidatePoints));
                         drawArrow(p2[0], p2[1], p1[0], p1[1]).appendTo("div.sql-panel").attr('id', 'arrow-' + startNodeId +
                                 '-' + endNodeId);
                         if (rootNodes.indexOf(endNodeId) != -1) {
@@ -315,62 +443,34 @@
             })
             sqlPanel.click(function(e) {
                 console.log('sqlPanel.click')
-                if (action == actionEnum.DRAW_CMD && $('div.btn-group .active').length > 0) {
-                    var id = $('div.btn-group .active').attr('id');
-                    var cmd, cmdDom;
-                    if (id === 'loadCmd') {
-                        cmd = new LoadCmd();
-                    } else if (id === 'innerJoinCmd') {
-                        cmd = new InnerJoinCmd();
-                    } else if (id === 'outerJoinCmd') {
-                        cmd = new OuterJoinCmd();
-                    } else if (id === 'filterCmd') {
-                        cmd = new FilterCmd();
-                    } else if (id === 'distinctCmd') {
-                        cmd = new DistinctCmd();
-                    }
-                    if (cmd) {
-                        cmdDom = cmd.draw().css({
-                            'position': 'absolute'}).offset({'left': e.pageX, 'top': e.pageY});
-                        cmdDom.appendTo(sqlPanel);
-                        addDraggable(cmdDom);
-                        rootNodes.push(cmd.id);
-                        nodes[cmd.id] = cmd;
-                        $('div.btn-group .active').removeClass('active');
-                    }
-
+                if (action == actionEnum.DRAW_CMD && $('ul.nav li.active').length > 0) {
+                    var id = $('ul.nav li.active a').attr('id');
+                    addCmd(id, [e.offsetX, e.offsetY]);
                 }
 
             });
 
+            $('ul.nav li').not('.nav-header').click(function(e) {
+                $('ul.nav li').removeClass('active');
+                $(this).addClass('active');
+            })
+
             $('#run').click(function(e) {
-                var v = {};
-                v.handler = 'pig';
-                v.vertices = [];
-                v.edges = [];
-                _.keys(nodes).forEach(function(el, index) {
-                    nodes[el].verticeId = index;
-                    v.vertices.push(nodes[el].serialize());
-                });
-                var travel = function(cmdNode) {
-                    cmdNode.getChildren().forEach(function(childNode){
-                        if (!_.contains(v.edges, [cmdNode.verticeId, childNode.verticeId])) {
-                            v.edges.push([cmdNode.verticeId, childNode.verticeId]);
-                        }
-                        travel(childNode);
-                    })
-                }
-                rootNodes.forEach(function(rootNodeName){
-                    travel(nodes[rootNodeName]);
-                })
-                console.log(JSON.stringify(v));
+                var v = serialize();
+                console.log('run:' + JSON.stringify(v));
                 $.ajax({
                     type: "POST",
-                    url: "some.php",
-                    data: JSON.stringify(v)
-                }).done(function (msg) {
-                            cosole.log("done");
-                        });
+                    url: "/stat/palo/edit",
+                    data: v,//JSON.stringify(v)
+                    success: function(data){
+                        console.log('response:' + data)
+                    }
+                })
+            })
+
+            $('#save').click(function(e) {
+                var v = serialize('save');
+                console.log('save' + JSON.stringify(v));
             })
 
             sqlPanel.contextMenu('context-menu-1', {
@@ -389,8 +489,50 @@
                     }
             );
 
+            (function() {
+                var sqlId = 1, json =
+                        '{"handler":"pig","vertices":[{"action":"load","params":{"fileName":"","delimeter":""},"coordinate":[214,424]},{"action":"innerjoin","params":{"leftCol":"","RightCol":""},"coordinate":[160,120]}],"edges":[[0,1]]}';
+                if (sqlId != -1) {
+                    var v = jQuery.parseJSON(json);
+                    v.vertices.forEach(function(cmd) {
+                        cmd.nodeId = addCmd(cmd.action + 'cmd', cmd.coordinate);
+                        _.keys(cmd.params).forEach(function(inputId) {
+                            $(cmd.nodeId).find('input#' + inputId).val(cmd.params[inputId]);
+                        })
+                    })
+
+                    v.edges.forEach(function(edge) {
+                        addEdge(v.vertices[edge[0]].nodeId, v.vertices[edge[1]].nodeId);
+                    })
+                }
+            })()
+
         });
 
+        function serialize(action) {
+            var v = {};
+            v.handler = 'pig';
+            v.vertices = [];
+            v.edges = [];
+            _.keys(nodes).forEach(function(el, index) {
+                nodes[el].verticeId = index;
+                var n = action != undefined && action === 'save'? nodes[el].serialize('save') : nodes[el].serialize();
+                n.id = 'a' + index;
+                v.vertices.push(n);
+            });
+            var travel = function(cmdNode) {
+                cmdNode.getChildren().forEach(function(childNode){
+                    if (!_.contains(v.edges, [cmdNode.verticeId, childNode.verticeId])) {
+                        v.edges.push([cmdNode.verticeId, childNode.verticeId]);
+                    }
+                    travel(childNode);
+                })
+            }
+            rootNodes.forEach(function(rootNodeName){
+                travel(nodes[rootNodeName]);
+            })
+            return v;
+        }
 
         function deleteCmdNode(cmdNode) {
             if (rootNodes.indexOf(cmdNode.id) != -1) {
@@ -413,80 +555,6 @@
 
 
         /**
-         * 拖拽元素
-         *
-         * @param el
-         * @param dragStartPoint
-         */
-        function dragDraggable(el, dragStartPoint) {
-            selectDraggable(el);
-//            moveDraggable(el, dragStartPoint, event);
-            var cmdNode = nodes[el.attr('id')];
-            cmdNode.getParents().forEach(function (parent) {
-                redrawLine(parent.getJqueryNode(), el);
-            })
-            cmdNode.getChildren().forEach(function (child) {
-                redrawLine(el, child.getJqueryNode());
-            })
-        }
-
-        /**
-         * 重新画两个元素的连接线
-         * @param s
-         * @param e
-         */
-        function redrawLine(s, e) {
-            startNodeEdges = getEdge(s);
-            endNodeEdges = getEdge(e);
-            var ep = nearestPoint(startNodeEdges[0], endNodeEdges);
-            var sp = nearestPoint(ep, startNodeEdges);
-            moveArrow($('#arrow-' + s.attr('id') + '-' + e.attr('id')), sp, ep);
-        }
-
-        /**
-         * 展示小球
-         *
-         * @param el
-         */
-        function showCircle(el) {
-            if (!el.children('.pos-circle').length) {
-                getEdge(el, true).forEach(function(p) {
-                    drawCircle(p[0] - 2, p[1] - 2, 4, 'yellow')
-                            .addClass("pos-circle")
-                            .css({
-                                'border': '1px solid rgba(82, 168, 236, 0.8)',
-                                'cursor': 'crosshair',
-                                'z-index': 15
-                            })
-                            .mousedown(function(e) {
-                                console.log('pos-circle.mousedown')
-                                e.stopPropagation();
-                                action = actionEnum.DRAW_ARROW;
-                                startPos = getCircleCenter($(this));
-                                var startNode = $(this).parent('.rectangle');
-                                candidatePoints = getEdge(startNode);
-                                startNodeId = startNode.attr('id');
-                            })
-                            .appendTo(el);
-                })
-            }
-            el.children('.pos-circle').show();
-        }
-
-        /**
-         * 选中可以拖动的元素
-         * @param el
-         */
-        function selectDraggable(el) {
-            $("div.sql-panel .rectangle").removeClass("rectangle-selected");
-            $(".pos-circle").hide();
-            if (!el.hasClass("rectangle-selected")) {
-                el.addClass("rectangle-selected");
-                showCircle(el);
-            }
-        }
-
-        /**
          * jquery对象的绝对位置
          *
          * @param el
@@ -494,6 +562,26 @@
          */
         function absolutePosition(el) {
             return [el.offset().left, el.offset().top];
+        }
+
+        /**
+         * 返回两个点集中最近的两点
+         *
+         * @param p1
+         * @param p2
+         * @return {Array}
+         */
+        function nearestPoints(p1, p2) {
+            var smallest = Number.MAX_VALUE, sp, ep;
+            p1.forEach(function(p) {
+                var t = nearestPoint(p, p2), td = distance(t, p);
+                if (smallest > td) {
+                    smallest = td;
+                    sp = p;
+                    ep = t;
+                }
+            })
+            return [sp, ep];
         }
 
         /**
@@ -683,27 +771,63 @@
 </head>
 
 <body>
-<div class="container">
-    <div class="page-header">
-        <h1>Palo-可视化SQL编辑器</h1>
-    </div>
-    <div class="container-fluid">
-        <div>
-            <div id="cmdbar" class="btn-group" data-toggle="buttons-radio">
-                <button type="button" id="loadCmd" class="btn btn-primary">加载</button>
-                <button type="button" id="innerJoinCmd" class="btn btn-primary">内连接</button>
-                <button type="button" id="outerJoinCmd" class="btn btn-primary">外链接</button>
-                <button type="button" id="filterCmd" class="btn btn-primary">过滤</button>
-                <button type="button" id="distinctCmd" class="btn btn-primary">去重</button>
-            </div>
-            <div id="runbar">
-                <button type="button" id="run" class="btn btn-primary" data-loading-text="Loading...">运行</button>
-            </div>
-            <div id="progressbar" class="progress progress-striped active">
-                <div class="bar" style="width: 40%;"></div>
-            </div>
+<div id="sql">
+    <!--<div class="page-header">-->
+        <!--<h1>Palo-可视化SQL编辑器</h1>-->
+    <!--</div>-->
+
+    <div class="navbar navbar-static">
+        <div class="navbar-inner">
+            <ul class="nav nav-pills" role="navigation">
+                <li class="dropdown">
+                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">文件
+                        <b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                        <li role="presentation">
+                            <a href="#" id="save">保存</a>
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="#" id="run">运行</a>
+                </li>
+            </ul>
         </div>
-        <div class="mini-layout sql-panel">
+    </div>
+
+    <div class="row-fluid">
+
+        <div class="cmdbar">
+            <div class="well sidebar-nav">
+                <ul class="nav nav-list">
+                    <li class="nav-header">数据源</li>
+                    <li class="active"><a href="#" id="loadCmd">hive加载</a></li>
+                    <li><a href="#">mysql加载</a></li>
+                    <li class="nav-header">查询</li>
+                    <li><a href="#">合并</a></li>
+                    <li><a href="#" id="innerJoinCmd">内连接</a></li>
+                    <li><a href="#" id="outerJoinCmd">外连接</a></li>
+                    <li class="nav-header">迭代</li>
+                    <li><a href="#" id="selectCmd">列筛选</a></li>
+                    <li class="nav-header">通用</li>
+                    <li><a href="#">限量</a></li>
+                    <li><a href="#" id="distinctCmd">去重</a></li>
+                    <li><a href="#" id="filterCmd">过滤</a></li>
+                    <li><a href="#">排序</a></li>
+                    <li><a href="#">分组</a></li>
+                    <li class="nav-header">其他</li>
+                    <li><a href="#">采样</a></li>
+                    <li><a href="#">切分</a></li>
+                    <li><a href="#">打印</a></li>
+                    <li><a href="#">注释</a></li>
+                </ul>
+            </div><!--/.well -->
+        </div>
+
+        <div class="span10">
+            <div class="mini-layout sql-panel">
+            </div>
         </div>
     </div>
 </div>
