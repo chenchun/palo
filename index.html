@@ -587,6 +587,22 @@
                     }
             );
 
+            sqlPanel.contextMenu('context-menu-2', {
+                        '删除': {
+                            click: function(el){
+                                deleteEdge(el.attr('id'));
+                            },
+                            klass: "menuitem",
+                            accel: "Delete",
+                            accelKclass: "menuitem-accel"
+                        }
+                    },
+                    {
+                        delegateEventTo: '.line',
+                        disable_native_context_menu: true
+                    }
+            );
+
             /**
              * 持久化
              */
@@ -719,6 +735,16 @@
             })
             delete nodes[cmdNode.id];
             cmdNode.jqueryNode.remove();
+        }
+
+        function deleteEdge(edgeId) {
+            var arr = edgeId.split('-'), startNode = nodes[arr[1]], endNode = nodes[arr[2]];
+            startNode.removeChild(endNode);
+            endNode.removeParent(startNode);
+            if (endNode.getParents().length == 0) {
+                rootNodes.push(endNode.id);
+            }
+            $('#' + edgeId).remove();
         }
 
 
