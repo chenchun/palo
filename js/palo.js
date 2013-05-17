@@ -307,3 +307,18 @@ var css = function ( el, props ) {
     return el;
 };
 
+var translate = function ( t ) {
+    return " translate3d(" + t.x + "px," + t.y + "px," + t.z + "px) ";
+};
+
+var perspective = function ( p ) {
+    return " perspective(" + p + "px) ";
+};
+
+var scale = function ( s ) {
+    return " scale(" + s + ") ";
+};
+
+var toNumber = function (numeric, fallback) {
+    return isNaN(numeric) ? (fallback || 0) : Number(numeric);
+};

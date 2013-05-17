@@ -11,6 +11,11 @@
     <link href="css/bootstrap.css" rel="stylesheet">
     <link href="css/bootstrap-responsive.css" rel="stylesheet">
     <style>
+
+        body{
+            overflow: hidden;
+            background-color: #f5f5f5;
+        }
         #sql{width: 1200px;}
 
         .navbar {margin-bottom: 2px; overflow: visible;}
@@ -167,6 +172,74 @@
             text-align: right;
         }
 
+        .exec {
+            width: 1000px;
+            background-color: white;
+            border: 1px solid #999;
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            -webkit-border-radius: 6px;
+            -moz-border-radius: 6px;
+            border-radius: 6px;
+            outline: none;
+            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+            -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+            -webkit-background-clip: padding-box;
+            -moz-background-clip: padding-box;
+            background-clip: padding-box;
+        }
+
+        div#impress {
+            position: absolute;
+            -webkit-transform-origin: 0% 0%;
+            transition: all 1000ms ease-in-out 500ms;
+            -webkit-transition: all 1000ms ease-in-out 500ms;
+            -webkit-transform-style: preserve-3d;
+            top: 50%;
+            left: 50%;
+        }
+
+        div#screen {
+            position: absolute;
+            -webkit-transform-origin: 0% 0%;
+            transition: all 500ms ease-in-out 0ms;
+            -webkit-transition: all 500ms ease-in-out 0ms;
+            -webkit-transform-style: preserve-3d;
+            -webkit-transform: rotateZ(0deg) rotateY(0deg) rotateX(0deg) translate3d(0px, 0px, 0px);
+        }
+
+        .step {
+            opacity: 1;
+        }
+
+        .well {
+            min-height: 20px;
+            padding: 19px;
+            margin-bottom: 20px;
+            background-color: white;
+            border: 1px solid #e3e3e3;
+            -webkit-border-radius: 4px;
+            -moz-border-radius: 4px;
+            border-radius: 4px;
+            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+            -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+        }
+
+        .modal-footer {
+            padding: 14px 15px 15px;
+            margin-bottom: 0;
+            text-align: right;
+            background-color: white;
+            border-top: 1px solid #ddd;
+            -webkit-border-radius: 0 0 6px 6px;
+            -moz-border-radius: 0 0 6px 6px;
+            border-radius: 0 0 6px 6px;
+            -webkit-box-shadow: inset 0 1px 0 #ffffff;
+            -moz-box-shadow: inset 0 1px 0 #ffffff;
+            box-shadow: inset 0 1px 0 #ffffff;
+        }
+
     </style>
 
     <script src="js/jquery.js"></script>
@@ -189,10 +262,21 @@
         //画线
         var startPos, candidatePoints, startNodeId;
 
+        var config = {
+            width: 1200,
+            height: 800,
+            perspective: 1000
+        }
+
         $(function () {
 
             var sqlPanel = $("div.sql-panel");
 
+            var relativePosition = function(p) {
+                p[0] = p[0] - sqlPanel.offset().left;
+                p[1] = p[1] - sqlPanel.offset().top;
+                return p;
+            }
             /**
              * 增加一个操作
              * @param id
@@ -228,6 +312,34 @@
                     return cmd.id;
                 }
             }
+
+
+            var dragCmdId, dragCmdCoordinate;
+            $( "ul.nav a").addClass('draggablecmd');
+            $( "ul.nav a.draggablecmd" ).draggable({
+                helper: "clone",
+                revert: "invalid",
+                drag: function() {
+                    if (dragCmdId != undefined) {
+                        dragCmdCoordinate
+                        dragCmdCoordinate = relativePosition(absolutePosition($(this)));
+                    }
+                }
+            });
+
+            sqlPanel.droppable({
+                accept: ".draggablecmd",
+                activeClass: "ui-state-hover",
+                hoverClass: "ui-state-active",
+                over:function(event, ui) {
+                    dragCmdCoordinate = relativePosition([event.pageX, event.pageY]);
+                    addCmd('loadcmd', dragCmdCoordinate);
+                },
+                drop: function(event, ui) {
+                    console.log('droppable')
+
+                }
+            });
 
             /**
              * 展示小球
@@ -327,12 +439,6 @@
                 moveArrow($('#arrow-' + s.attr('id') + '-' + e.attr('id')), sp, ep);
             }
 
-            var relativePosition = function(p) {
-                p[0] = p[0] - sqlPanel.offset().left;
-                p[1] = p[1] - sqlPanel.offset().top;
-                return p;
-            }
-
             /**
              * 新增一条边
              *
@@ -353,14 +459,6 @@
                     nodes[startNodeId].addChild(nodes[endNodeId]);
                 }
             }
-
-            sqlPanel.droppable({
-                accept: ".rectangle",
-                activeClass: "ui-state-hover",
-                hoverClass: "ui-state-active",
-                drop: function( event, ui ) {
-                }
-            });
 
             sqlPanel.delegate(".rectangle", "mousedown", function (e) {
                 console.log('rectangle.mousedown')
@@ -489,6 +587,9 @@
                     }
             );
 
+            /**
+             * 持久化
+             */
             (function() {
                 var sqlId = 1, json =
                         '{"handler":"pig","vertices":[{"action":"load","params":{"fileName":"","delimeter":""},"coordinate":[214,424]},{"action":"innerjoin","params":{"leftCol":"","RightCol":""},"coordinate":[160,120]}],"edges":[[0,1]]}';
@@ -505,7 +606,74 @@
                         addEdge(v.vertices[edge[0]].nodeId, v.vertices[edge[1]].nodeId);
                     })
                 }
-            })()
+            })();
+
+            /**
+             * init impress
+             */
+            (function(){
+                $('.slice').each(function(index) {
+                    var el = $(this);
+                    var sliceTranslate = {
+                        x: toNumber(el.attr('data-x')),
+                        y: toNumber(el.attr('data-y')),
+                        z: toNumber(el.attr('data-z'))
+                    };
+                    css(el[0], {
+                        position: "absolute",
+                        transform: "translate(-50%, -50%)" + translate(sliceTranslate),
+                        transformStyle: "preserve-3d"
+                    })
+                    if (index == 0) {
+                        el.addClass('step');
+                    }
+                })
+            })();
+            config.height = window.innerHeight;
+            config.width = window.innerWidth;
+            var computeWindowScale = function (config) {
+                var hScale = window.innerHeight / config.height,
+                        wScale = window.innerWidth / config.width;
+                config.height = window.innerHeight;
+                config.innerWidth = window.innerWidth;
+                return hScale > wScale ? wScale : hScale;
+            };
+
+            var impress = $('#impress'), screen = $('#screen');
+            $(window).resize(function(e){
+
+                var target = $('.step')[0];
+                var targetScale = computeWindowScale(config);
+                css(impress[0], {
+                    transform: perspective( config.perspective / targetScale ) + scale( targetScale ),
+                    transitionDuration: "500ms",
+                    transitionDelay: "0ms"
+                });
+
+            })
+
+            var goto = function(el) {
+                var targetTranslate = {
+                    x: -toNumber(el.attr('data-x')),
+                    y: -toNumber(el.attr('data-y')),
+                    z: -toNumber(el.attr('data-z'))
+                };
+                css(screen[0], {
+                    transform: translate(targetTranslate),
+                    transitionDuration: "500ms",
+                    transitionDelay: "0ms"
+                })
+                $('.slice').removeClass('step');
+                $(el).addClass('step');
+            };
+
+            $('#goto-console').click(function(e) {
+                goto($('#console'));
+            });
+
+            $('#goto-sql').click(function(e) {
+                goto($('#sql'));
+            });
 
         });
 
@@ -771,62 +939,111 @@
 </head>
 
 <body>
-<div id="sql">
-    <!--<div class="page-header">-->
-        <!--<h1>Palo-可视化SQL编辑器</h1>-->
-    <!--</div>-->
-
-    <div class="navbar navbar-static">
-        <div class="navbar-inner">
-            <ul class="nav nav-pills" role="navigation">
-                <li class="dropdown">
-                    <a class="dropdown-toggle" data-toggle="dropdown" href="#">文件
-                        <b class="caret"></b>
-                    </a>
-                    <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
-                        <li role="presentation">
-                            <a href="#" id="save">保存</a>
+<div id="impress">
+    <div id="screen">
+        <div id="sql" class="slice" data-x='0' data-y='0' data-z='0'>
+            <div class="navbar navbar-static">
+                <div class="navbar-inner">
+                    <ul class="nav nav-pills" role="navigation">
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">文件<b class="caret"></b></a>
+                            <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                                <li role="presentation">
+                                    <a href="#" id="save">保存</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#" id="run">运行</a>
+                        </li>
+                        <li>
+                            <a href="#" id="goto-console">控制台<i class="icon-chevron-right"></i></a>
                         </li>
                     </ul>
-                </li>
-                <li>
-                    <a href="#" id="run">运行</a>
-                </li>
-            </ul>
+                </div>
+            </div>
+
+            <div class="row-fluid">
+
+                <div class="cmdbar">
+                    <div class="well sidebar-nav">
+                        <ul class="nav nav-list">
+                            <li class="nav-header">数据源</li>
+                            <li class="active"><a href="#" id="loadCmd">hive加载</a></li>
+                            <li><a href="#">mysql加载</a></li>
+                            <li class="nav-header">查询</li>
+                            <li><a href="#">合并</a></li>
+                            <li><a href="#" id="innerJoinCmd">内连接</a></li>
+                            <li><a href="#" id="outerJoinCmd">外连接</a></li>
+                            <li class="nav-header">迭代</li>
+                            <li><a href="#" id="selectCmd">列筛选</a></li>
+                            <li class="nav-header">通用</li>
+                            <li><a href="#">限量</a></li>
+                            <li><a href="#" id="distinctCmd">去重</a></li>
+                            <li><a href="#" id="filterCmd">过滤</a></li>
+                            <li><a href="#">排序</a></li>
+                            <li><a href="#">分组</a></li>
+                            <li class="nav-header">其他</li>
+                            <li><a href="#">采样</a></li>
+                            <li><a href="#">切分</a></li>
+                            <li><a href="#">打印</a></li>
+                            <li><a href="#">注释</a></li>
+                        </ul>
+                    </div><!--/.well -->
+                </div>
+
+                <div class="span10">
+                    <div class="mini-layout sql-panel">
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-
-    <div class="row-fluid">
-
-        <div class="cmdbar">
-            <div class="well sidebar-nav">
-                <ul class="nav nav-list">
-                    <li class="nav-header">数据源</li>
-                    <li class="active"><a href="#" id="loadCmd">hive加载</a></li>
-                    <li><a href="#">mysql加载</a></li>
-                    <li class="nav-header">查询</li>
-                    <li><a href="#">合并</a></li>
-                    <li><a href="#" id="innerJoinCmd">内连接</a></li>
-                    <li><a href="#" id="outerJoinCmd">外连接</a></li>
-                    <li class="nav-header">迭代</li>
-                    <li><a href="#" id="selectCmd">列筛选</a></li>
-                    <li class="nav-header">通用</li>
-                    <li><a href="#">限量</a></li>
-                    <li><a href="#" id="distinctCmd">去重</a></li>
-                    <li><a href="#" id="filterCmd">过滤</a></li>
-                    <li><a href="#">排序</a></li>
-                    <li><a href="#">分组</a></li>
-                    <li class="nav-header">其他</li>
-                    <li><a href="#">采样</a></li>
-                    <li><a href="#">切分</a></li>
-                    <li><a href="#">打印</a></li>
-                    <li><a href="#">注释</a></li>
-                </ul>
-            </div><!--/.well -->
-        </div>
-
-        <div class="span10">
-            <div class="mini-layout sql-panel">
+        <div id="console" class="slice" data-x='1200' data-y='0' data-z='0'>
+            <!-- 运行进度弹出层 -->
+            <div class="exec" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                <div class="modal-header">
+                    <a href="#" id="goto-sql"><i class="icon-chevron-left"></i>返回</a>
+                    <h3 id="myModalLabel">sql:</h3>
+                </div>
+                <div class="modal-body" style="height:700px">
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                    <p>One fine body…</p>
+                </div>
+                <div class="modal-footer">
+                    <div class="progress progress-striped active">
+                        <div class="bar" style="width: 40%;"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
